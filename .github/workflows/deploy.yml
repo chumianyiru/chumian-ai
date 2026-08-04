@@ -130,6 +130,11 @@ jobs:
             WantedBy=multi-user.target
             SERVICE_EOF
 
+            # 清理可能占用 24512 端口的旧进程
+            echo "[deploy] 清理占用 24512 端口的旧进程"
+            fuser -k 24512/tcp 2>/dev/null || true
+            sleep 2
+
             systemctl daemon-reload
             systemctl enable chumian-ai
             systemctl restart chumian-ai || true
