@@ -60,34 +60,34 @@ jobs:
             cd $APP_DIR
             echo "[deploy] 后端代码已部署到 $APP_DIR"
 
-            # 服务器直接下载轻量独立 Python 包
-            PYTHON_DIR=/opt/python311
+            # 服务器直接下载 Miniconda 并通过国内镜像安装 Python 3.11
+            MINICONDA=/opt/miniconda3
+            PYTHON_DIR=$MINICONDA
             PYTHON_OK=false
             "$PYTHON_DIR/bin/python3" --version >/dev/null 2>&1 && PYTHON_OK=true || true
 
             if [ "$PYTHON_OK" = "true" ]; then
               echo "[deploy] 检测到可用的 Python: $PYTHON_DIR/bin/python3"
             else
-              echo "[deploy] 开始下载 Python 3.11 独立包"
-              rm -rf $PYTHON_DIR
-              mkdir -p $PYTHON_DIR
-              PY_TAR=/tmp/python311.tar.gz
-              rm -f $PY_TAR
-              download_python() {
+              echo "[deploy] 开始下载 Miniconda 安装包"
+              rm -rf $MINICONDA
+              CONDA_SH=/tmp/miniconda.sh
+              rm -f $CONDA_SH
+              download_conda() {
                 echo "[deploy] 尝试下载: $1"
-                curl -fsSL --connect-timeout 30 --max-time 180 --retry 2 -o $PY_TAR "$1" || return 1
+                curl -fsSL --connect-timeout 60 --max-time 600 --retry 2 -o $CONDA_SH "$1" || return 1
               }
-              download_python "https://github.com/indygreg/python-build-standalone/releases/download/20240713/cpython-3.11.9+20240713-x86_64-unknown-linux-gnu-install_only.tar.gz" || \
-              download_python "https://ghproxy.com/https://github.com/indygreg/python-build-standalone/releases/download/20240713/cpython-3.11.9+20240713-x86_64-unknown-linux-gnu-install_only.tar.gz" || \
-              (echo "ERROR: 无法下载 Python 3.11 独立包"; ls -lh $PY_TAR 2>/dev/null || true; exit 1)
-              echo "[deploy] Python 包下载完成，开始解压"
-              tar -xzf $PY_TAR -C $PYTHON_DIR --strip-components=1
-              rm -f $PY_TAR
+              download_conda "https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda3-latest-Linux-x86_64.sh" || \
+              download_conda "https://mirrors.aliyun.com/anaconda/miniconda/Miniconda3-latest-Linux-x86_64.sh" || \
+              download_conda "https://mirrors.huaweicloud.com/anaconda/miniconda/Miniconda3-latest-Linux-x86_64.sh" || \
+              (echo "ERROR: 无法下载 Miniconda 安装包"; ls -lh $CONDA_SH 2>/dev/null || true; exit 1)
+              echo "[deploy] Miniconda 下载完成，开始安装"
+              bash $CONDA_SH -b -p $MINICONDA
+              rm -f $CONDA_SH
               "$PYTHON_DIR/bin/python3" --version
-              echo "[deploy] Python 解压完成"
+              echo "[deploy] Miniconda 安装完成"
             fi
 
-            echo "[deploy] 创建虚拟环境"
             $PYTHON_DIR/bin/python3 -m venv venv
             source venv/bin/activate
             echo "[deploy] 升级 pip"
@@ -120,7 +120,7 @@ jobs:
             Type=simple
             User=root
             WorkingDirectory=$APP_DIR
-            Environment=PATH=$APP_DIR/venv/bin:/opt/python311/bin
+            Environment=PATH=$APP_DIR/venv/bin:/opt/miniconda3/bin
             ExecStart=$APP_DIR/venv/bin/python3 -m uvicorn main:app --host 0.0.0.0 --port 24512
             Restart=always
             RestartSec=5
