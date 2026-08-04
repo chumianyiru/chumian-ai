@@ -62,8 +62,8 @@ jobs:
 
             # 服务器直接下载轻量独立 Python 包
             PYTHON_DIR=/opt/python311
-            if [ -x "$PYTHON_DIR/bin/python3" ]; then
-              echo "[deploy] 检测到已存在 $PYTHON_DIR，跳过 Python 下载"
+            if "$PYTHON_DIR/bin/python3" --version >/dev/null 2>&1; then
+              echo "[deploy] 检测到可用的 Python: $PYTHON_DIR/bin/python3"
             else
               echo "[deploy] 开始下载 Python 3.11 独立包"
               rm -rf $PYTHON_DIR
@@ -80,7 +80,8 @@ jobs:
               echo "[deploy] Python 包下载完成，开始解压"
               tar -xzf $PY_TAR -C $PYTHON_DIR --strip-components=1
               rm -f $PY_TAR
-              echo "[deploy] Python 解压完成: $PYTHON_DIR/bin/python3"
+              "$PYTHON_DIR/bin/python3" --version
+              echo "[deploy] Python 解压完成"
             fi
 
             echo "[deploy] 创建虚拟环境"
