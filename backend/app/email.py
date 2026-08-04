@@ -1,28 +1,42 @@
 import random
 import smtplib
 import ssl
+import socket
 from email.mime.text import MIMEText
 from email.header import Header
 import asyncio
+import logging
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 def generate_code(length: int = 6) -> str:
     return "".join(random.choices("0123456789", k=length))
 
 
+def _local_hostname() -> str:
+    try:
+        return socket.getfqdn()
+    except Exception:
+        return "chumian.ai"
+
+
 def _send_sync(hostname: str, port: int, use_tls: bool, username: str, password: str, msg: MIMEText) -> None:
     """同步发送邮件，支持 STARTTLS 和 SSL。"""
+    local_hostname = _local_hostname()
     ctx = ssl.create_default_context()
+    logger.info(f"[smtp] connecting {hostname}:{port} tls={use_tls} local_hostname={local_hostname}")
     if use_tls and port == 465:
-        server = smtplib.SMTP_SSL(hostname, port, timeout=15, context=ctx)
+        server = smtplib.SMTP_SSL(hostname, port, timeout=20, context=ctx, local_hostname=local_hostname)
     else:
-        server = smtplib.SMTP(hostname, port, timeout=15)
+        server = smtplib.SMTP(hostname, port, timeout=20, local_hostname=local_hostname)
     try:
         if not use_tls and port == 587:
             server.starttls(context=ctx)
         server.login(username, password)
         server.send_message(msg)
+        logger.info(f"[smtp] sent via {hostname}:{port}")
     finally:
         try:
             server.quit()
@@ -48,33 +62,21 @@ def _build_message(to_email: str, code: str) -> MIMEText:
     return msg
 
 
-def _try_send_with_config(
-    hostname: str,
-    port: int,
-    use_tls: bool,
-    username: str,
-    password: str,
-    msg: MIMEText,
-) -> None:
-    try:
-        _send_sync(hostname, port, use_tls, username, password, msg)
-        return
-    except Exception as e:
-        raise RuntimeError(f"{hostname}:{port} (tls={use_tls}) 发送失败: {e}") from e
-
-
 async def send_verification_email(to_email: str, code: str) -> None:
     msg = _build_message(to_email, code)
     username = settings.smtp_user
     password = settings.smtp_pass
 
+    if not username or not password:
+        raise RuntimeError("SMTP 用户名或授权码未配置")
+
     configs = [
-        (settings.smtp_host, settings.smtp_port, True),   # SSL/TLS，如 465
-        ("smtp.qq.com", 587, False),                       # STARTTLS
-        ("smtp.qq.com", 465, True),                        # SSL
+        (settings.smtp_host or "smtp.qq.com", settings.smtp_port or 465, True),
+        ("smtp.qq.com", 587, False),
+        ("smtp.qq.com", 465, True),
     ]
 
-    last_error: Exception | None = None
+    errors = []
     loop = asyncio.get_event_loop()
     for hostname, port, use_tls in configs:
         for attempt in range(2):
@@ -82,7 +84,7 @@ async def send_verification_email(to_email: str, code: str) -> None:
                 await asyncio.wait_for(
                     loop.run_in_executor(
                         None,
-                        _try_send_with_config,
+                        _send_sync,
                         hostname,
                         port,
                         use_tls,
@@ -90,11 +92,13 @@ async def send_verification_email(to_email: str, code: str) -> None:
                         password,
                         msg,
                     ),
-                    timeout=30,
+                    timeout=40,
                 )
                 return
             except Exception as e:
-                last_error = e
+                err_text = f"{hostname}:{port} (tls={use_tls}) attempt={attempt+1}: {e}"
+                logger.warning(f"[smtp] {err_text}")
+                errors.append(err_text)
                 await asyncio.sleep(1)
 
-    raise RuntimeError(f"邮件发送失败：{last_error}")
+    raise RuntimeError("邮件发送失败：" + "; ".join(errors))
