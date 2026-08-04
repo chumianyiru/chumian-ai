@@ -1,0 +1,49 @@
+name: Android Release Build
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Android Release APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > /tmp/chumian.jks
+
+      - name: Get dependencies
+        working-directory: frontend/chumian_ai
+        run: flutter pub get
+
+      - name: Build release APK
+        working-directory: frontend/chumian_ai
+        run: flutter build apk --release
+        env:
+          KEYSTORE_PATH: /tmp/chumian.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+
+      - name: Upload release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: chumian-ai-release-apk
+          path: frontend/chumian_ai/build/app/outputs/flutter-apk/app-release.apk
