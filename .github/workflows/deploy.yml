@@ -63,8 +63,8 @@ jobs:
               apt-get install -y python3 python3-venv python3-pip systemd
             elif command -v yum >/dev/null 2>&1; then
               if [ "$PY_VER" -lt 38 ]; then
-                yum install -y centos-release-scl epel-release
-                yum install -y rh-python38 rh-python38-python-pip systemd
+                yum install -y epel-release
+                yum install -y python38 python38-pip || yum install -y rh-python38 rh-python38-python-pip
               fi
               yum install -y systemd
             elif command -v dnf >/dev/null 2>&1; then
@@ -78,7 +78,9 @@ jobs:
             mv /tmp/chumian-ai-staging/backend $APP_DIR
             cd $APP_DIR
 
-            if [ -x /opt/rh/rh-python38/root/usr/bin/python3 ]; then
+            if command -v python3.8 >/dev/null 2>&1; then
+              PY=python3.8
+            elif [ -x /opt/rh/rh-python38/root/usr/bin/python3 ]; then
               PY=/opt/rh/rh-python38/root/usr/bin/python3
             else
               PY=python3
