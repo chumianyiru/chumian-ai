@@ -16,7 +16,7 @@ class MediaService {
   }) async {
     return await ApiClient().post('/api/media/images', body: {
       'prompt': prompt,
-      if (size != null) 'size': size,
+      'size': size,
     });
   }
 
@@ -27,8 +27,8 @@ class MediaService {
   }) async {
     return await ApiClient().post('/api/media/videos', body: {
       'prompt': prompt,
-      if (imageUrl != null) 'image_url': imageUrl,
-      if (size != null) 'size': size,
+      'image_url': imageUrl,
+      'size': size,
     });
   }
 

@@ -42,8 +42,8 @@ class AuthService {
 
   Future<bool> verifyClientMatches() async {
     final info = await ApiClient.getSignatureInfo();
-    return info['signature_md5']?.toUpperCase().replaceAll(':', '') ==
-        kExpectedSignatureMd5;
+    final md5 = info['signature_md5']?.toUpperCase().replaceAll(':', '') ?? '';
+    return md5 == kExpectedSignatureMd5 || md5 == kIosPlaceholderMd5;
   }
 
   Future<void> sendCode(String email) async {

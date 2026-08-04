@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     expected_package: str = "com.chumian.ai"
     expected_md5: str = ""
     daily_points: int = 90_000_000
+
+    @property
+    def expected_md5_set(self) -> set[str]:
+        return {m.strip().upper().replace(":", "") for m in self.expected_md5.split(",") if m.strip()}
     max_concurrent_chats: int = 5
     host: str = "0.0.0.0"
     port: int = 24512

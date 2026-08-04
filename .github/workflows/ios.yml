@@ -1,0 +1,40 @@
+name: iOS Release Build
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build iOS Release
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Get dependencies
+        working-directory: frontend/chumian_ai
+        run: flutter pub get
+
+      - name: Build iOS (no code signing)
+        working-directory: frontend/chumian_ai
+        run: flutter build ios --release --no-codesign
+
+      - name: Package Runner.app
+        working-directory: frontend/chumian_ai
+        run: |
+          cd build/ios/Release-iphoneos
+          zip -r /tmp/Runner.app.zip Runner.app
+
+      - name: Upload iOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: chumian-ai-release-ios
+          path: /tmp/Runner.app.zip

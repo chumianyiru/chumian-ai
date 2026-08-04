@@ -119,8 +119,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                             child: Image.network(
                               _post.mediaUrl!,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
-                                  const SizedBox.shrink(),
+                              errorBuilder: (context, error, stackTrace) =>
+                                const SizedBox.shrink(),
                             ),
                           ),
                         ],

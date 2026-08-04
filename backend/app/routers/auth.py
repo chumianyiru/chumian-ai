@@ -30,9 +30,10 @@ async def ensure_daily_reset(db: aiosqlite.Connection, user: dict):
 
 @router.post("/client/verify")
 async def client_verify(payload: ClientVerify):
+    md5 = payload.signature_md5.upper().replace(":", "")
     ok = (
         payload.package_name == settings.expected_package
-        and payload.signature_md5.upper() == settings.expected_md5.upper()
+        and md5 in settings.expected_md5_set
     )
     if not ok:
         raise HTTPException(status_code=403, detail="你使用的不是官方版")
@@ -94,9 +95,10 @@ async def register(payload: Register, db: aiosqlite.Connection = Depends(get_db)
 
 @router.post("/login")
 async def login(payload: Login, response: Response, db: aiosqlite.Connection = Depends(get_db)):
+    md5 = payload.signature_md5.upper().replace(":", "")
     if payload.package_name != settings.expected_package:
         raise HTTPException(status_code=403, detail="你使用的不是官方版")
-    if payload.signature_md5.upper() != settings.expected_md5.upper():
+    if md5 not in settings.expected_md5_set:
         raise HTTPException(status_code=403, detail="你使用的不是官方版")
     email = payload.email.lower()
     row = await db.execute("SELECT * FROM users WHERE email=? AND email_verified=1", (email,))

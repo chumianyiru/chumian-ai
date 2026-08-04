@@ -33,9 +33,9 @@ class ExploreService {
   }) async {
     final res = await ApiClient().post('/api/explore/agents', body: {
       'name': name,
-      if (description != null) 'description': description,
-      if (systemPrompt != null) 'system_prompt': systemPrompt,
-      if (icon != null) 'icon': icon,
+      'description': description,
+      'system_prompt': systemPrompt,
+      'icon': icon,
       'published': published,
     });
     return Agent.fromJson(res as Map<String, dynamic>);
@@ -56,7 +56,7 @@ class ExploreService {
     final res = await ApiClient().post('/api/explore/posts', body: {
       'title': title,
       'content': content,
-      if (mediaUrl != null) 'media_url': mediaUrl,
+      'media_url': mediaUrl,
     });
     return Post.fromJson(res as Map<String, dynamic>);
   }

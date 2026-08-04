@@ -150,7 +150,7 @@ class _PostCard extends StatelessWidget {
                   child: Image.network(
                     post.mediaUrl!,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
                   ),
                 ),
               ],
