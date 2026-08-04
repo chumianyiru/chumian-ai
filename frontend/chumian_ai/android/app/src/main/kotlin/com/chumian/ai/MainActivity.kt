@@ -45,7 +45,7 @@ class MainActivity : FlutterActivity() {
                 packageManager.getPackageInfo(
                     packageName,
                     PackageManager.GET_SIGNING_CERTIFICATES
-                ).signingInfo?.apkContentsSigners
+                ).signingInfo?.apkContentsSigners?.toList()
             } else {
                 @Suppress("DEPRECATION")
                 packageManager.getPackageInfo(
