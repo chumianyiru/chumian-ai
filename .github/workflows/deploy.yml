@@ -30,8 +30,7 @@ jobs:
 
       - name: Download Miniconda installer on runner
         run: |
-          mkdir -p /tmp/chumian-ai-staging
-          curl -fsSL -o /tmp/chumian-ai-staging/miniconda.sh https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda3-latest-Linux-x86_64.sh
+          curl -fsSL -o miniconda.sh https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda3-latest-Linux-x86_64.sh
 
       - name: Copy backend and Miniconda installer to server
         uses: appleboy/scp-action@v0.1.7
@@ -41,7 +40,7 @@ jobs:
           password: ${{ secrets.SERVER_PASSWORD }}
           port: ${{ secrets.SERVER_PORT }}
           timeout: 30m
-          source: "backend/,/tmp/chumian-ai-staging/miniconda.sh"
+          source: "backend/,miniconda.sh"
           target: "/tmp/chumian-ai-staging"
           rm: true
 
