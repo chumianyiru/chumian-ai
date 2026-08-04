@@ -28,11 +28,7 @@ jobs:
             mkdir -p /opt/rh/devtoolset-9
             touch /opt/rh/devtoolset-9/enable
 
-      - name: Download standalone Python on runner
-        run: |
-          curl -fsSL -o python311.tar.gz https://github.com/indygreg/python-build-standalone/releases/download/20240713/cpython-3.11.9+20240713-x86_64-unknown-linux-gnu-install_only.tar.gz
-
-      - name: Copy backend and standalone Python to server
+      - name: Copy backend to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -40,7 +36,7 @@ jobs:
           password: ${{ secrets.SERVER_PASSWORD }}
           port: ${{ secrets.SERVER_PORT }}
           timeout: 30m
-          source: "backend/,python311.tar.gz"
+          source: "backend/"
           target: "/tmp/chumian-ai-staging"
           rm: true
 
@@ -62,12 +58,23 @@ jobs:
             mv /tmp/chumian-ai-staging/backend $APP_DIR
             cd $APP_DIR
 
-            # 使用 GitHub Actions runner 已传过来的独立 Python 包（体积小、部署快）
+            # 服务器直接下载轻量独立 Python 包（避免 scp 大文件到慢服务器）
             PYTHON_DIR=/opt/python311
             if [ ! -x "$PYTHON_DIR/bin/python3" ]; then
               rm -rf $PYTHON_DIR
               mkdir -p $PYTHON_DIR
-              tar -xzf /tmp/chumian-ai-staging/python311.tar.gz -C $PYTHON_DIR --strip-components=1
+              PY_TAR=/tmp/python311.tar.gz
+              rm -f $PY_TAR
+              download_python() {
+                curl -fsSL --max-time 300 --retry 3 -o $PY_TAR "$1" || return 1
+              }
+              # 依次尝试多个源
+              download_python "https://github.com/indygreg/python-build-standalone/releases/download/20240713/cpython-3.11.9+20240713-x86_64-unknown-linux-gnu-install_only.tar.gz" || \
+              download_python "https://ghproxy.com/https://github.com/indygreg/python-build-standalone/releases/download/20240713/cpython-3.11.9+20240713-x86_64-unknown-linux-gnu-install_only.tar.gz" || \
+              download_python "https://mirror.ghproxy.com/https://github.com/indygreg/python-build-standalone/releases/download/20240713/cpython-3.11.9+20240713-x86_64-unknown-linux-gnu-install_only.tar.gz" || \
+              (echo "ERROR: 无法下载 Python 3.11 独立包"; ls -lh $PY_TAR 2>/dev/null || true; exit 1)
+              tar -xzf $PY_TAR -C $PYTHON_DIR --strip-components=1
+              rm -f $PY_TAR
             fi
 
             $PYTHON_DIR/bin/python3 -m venv venv
