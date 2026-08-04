@@ -28,11 +28,11 @@ jobs:
             mkdir -p /opt/rh/devtoolset-9
             touch /opt/rh/devtoolset-9/enable
 
-      - name: Download Miniconda installer on runner
+      - name: Download standalone Python on runner
         run: |
-          curl -fsSL -o miniconda.sh https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda3-latest-Linux-x86_64.sh
+          curl -fsSL -o python311.tar.gz https://mirror.ghproxy.com/https://github.com/indygreg/python-build-standalone/releases/download/20240713/cpython-3.11.9+20240713-x86_64-unknown-linux-gnu-install_only.tar.gz
 
-      - name: Copy backend and Miniconda installer to server
+      - name: Copy backend and standalone Python to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -40,7 +40,7 @@ jobs:
           password: ${{ secrets.SERVER_PASSWORD }}
           port: ${{ secrets.SERVER_PORT }}
           timeout: 30m
-          source: "backend/,miniconda.sh"
+          source: "backend/,python311.tar.gz"
           target: "/tmp/chumian-ai-staging"
           rm: true
 
@@ -62,13 +62,15 @@ jobs:
             mv /tmp/chumian-ai-staging/backend $APP_DIR
             cd $APP_DIR
 
-            # 使用 GitHub Actions runner 已传过来的 Miniconda 安装包（避免服务器下载失败）
-            MINICONDA=/opt/miniconda3
-            if [ ! -x "$MINICONDA/bin/python3" ]; then
-              bash /tmp/chumian-ai-staging/miniconda.sh -b -p $MINICONDA
+            # 使用 GitHub Actions runner 已传过来的独立 Python 包（体积小、部署快）
+            PYTHON_DIR=/opt/python311
+            if [ ! -x "$PYTHON_DIR/bin/python3" ]; then
+              rm -rf $PYTHON_DIR
+              mkdir -p $PYTHON_DIR
+              tar -xzf /tmp/chumian-ai-staging/python311.tar.gz -C $PYTHON_DIR --strip-components=1
             fi
 
-            $MINICONDA/bin/python3 -m venv venv
+            $PYTHON_DIR/bin/python3 -m venv venv
             source venv/bin/activate
             pip install --upgrade pip -i https://pypi.tuna.tsinghua.edu.cn/simple
             pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
