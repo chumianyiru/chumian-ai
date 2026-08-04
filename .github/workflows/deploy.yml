@@ -132,6 +132,13 @@ jobs:
 
             systemctl daemon-reload
             systemctl enable chumian-ai
-            systemctl restart chumian-ai
-            sleep 3
-            systemctl status chumian-ai --no-pager
+            systemctl restart chumian-ai || true
+            sleep 5
+            if systemctl is-active --quiet chumian-ai; then
+              echo "[deploy] 服务启动成功"
+              systemctl status chumian-ai --no-pager
+            else
+              echo "[deploy] 服务启动失败，查看日志"
+              journalctl -u chumian-ai -n 50 --no-pager
+              exit 1
+            fi
