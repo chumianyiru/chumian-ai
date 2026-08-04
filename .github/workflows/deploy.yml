@@ -17,6 +17,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Copy backend to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: ${{ secrets.SERVER_PORT }}
+          source: "backend/"
+          target: "/tmp/chumian-ai-staging"
+          rm: true
+
       - name: Deploy backend via SSH
         uses: appleboy/ssh-action@v1.0.0
         with:
@@ -40,10 +51,8 @@ jobs:
             fi
 
             APP_DIR=/opt/chumian-ai
-            mkdir -p $APP_DIR
-            rm -rf $APP_DIR/app $APP_DIR/main.py $APP_DIR/requirements.txt $APP_DIR/data
-
-            cp -r ${{ github.workspace }}/backend/* $APP_DIR/
+            rm -rf $APP_DIR
+            mv /tmp/chumian-ai-staging/backend $APP_DIR
             cd $APP_DIR
 
             python3 -m venv venv || python3 -m virtualenv venv
