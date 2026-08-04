@@ -106,6 +106,7 @@ jobs:
             SMTP_PASS=${{ secrets.SMTP_PASS }}
             EXPECTED_PACKAGE=com.chumian.ai
             EXPECTED_MD5=${{ secrets.EXPECTED_MD5 }}
+            INVITE_CODE=4224242515552
             DAILY_POINTS=90000000
             MAX_CONCURRENT_CHATS=5
             HOST=0.0.0.0

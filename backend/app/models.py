@@ -12,6 +12,7 @@ class SendCode(BaseModel):
 class Register(BaseModel):
     email: EmailStr
     code: str = Field(..., min_length=4, max_length=10)
+    invite_code: str = Field(..., min_length=1)
     password: str = Field(..., min_length=6)
     nickname: str = Field(..., min_length=1, max_length=32)
 

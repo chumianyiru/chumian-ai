@@ -69,6 +69,8 @@ async def send_code(payload: SendCode, db: aiosqlite.Connection = Depends(get_db
 
 @router.post("/register")
 async def register(payload: Register, db: aiosqlite.Connection = Depends(get_db)):
+    if payload.invite_code != settings.invite_code:
+        raise HTTPException(status_code=400, detail="邀请码错误")
     email = payload.email.lower()
     if not email.endswith("@qq.com"):
         raise HTTPException(status_code=400, detail="目前仅支持QQ邮箱")

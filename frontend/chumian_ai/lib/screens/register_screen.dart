@@ -17,6 +17,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _emailCtrl = TextEditingController();
   final _codeCtrl = TextEditingController();
+  final _inviteCodeCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _nicknameCtrl = TextEditingController();
   bool _loading = false;
@@ -57,6 +58,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _register() async {
     final email = _emailCtrl.text.trim();
     final code = _codeCtrl.text.trim();
+    final inviteCode = _inviteCodeCtrl.text.trim();
     final password = _passwordCtrl.text;
     final nickname = _nicknameCtrl.text.trim();
 
@@ -66,6 +68,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
     if (code.length != 6) {
       Fluttertoast.showToast(msg: '请输入 6 位验证码');
+      return;
+    }
+    if (inviteCode.isEmpty) {
+      Fluttertoast.showToast(msg: '请输入邀请码');
       return;
     }
     if (password.length < 6) {
@@ -82,6 +88,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final user = await AuthService().register(
         email: email,
         code: code,
+        inviteCode: inviteCode,
         password: password,
         nickname: nickname,
       );
@@ -138,6 +145,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ? '$_countdown s'
                         : (_sendingCode ? '发送中' : '获取验证码')),
                   ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _inviteCodeCtrl,
+                decoration: const InputDecoration(
+                  hintText: '邀请码',
+                  prefixIcon: Icon(Icons.card_membership_outlined),
                 ),
               ),
               const SizedBox(height: 16),
@@ -205,6 +220,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void dispose() {
     _emailCtrl.dispose();
     _codeCtrl.dispose();
+    _inviteCodeCtrl.dispose();
     _passwordCtrl.dispose();
     _nicknameCtrl.dispose();
     super.dispose();

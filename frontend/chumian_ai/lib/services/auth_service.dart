@@ -53,12 +53,14 @@ class AuthService {
   Future<User> register({
     required String email,
     required String code,
+    required String inviteCode,
     required String password,
     required String nickname,
   }) async {
     final res = await ApiClient().post('/api/auth/register', body: {
       'email': email,
       'code': code,
+      'invite_code': inviteCode,
       'password': password,
       'nickname': nickname,
     });

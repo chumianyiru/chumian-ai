@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     smtp_pass: str = ""
     expected_package: str = "com.chumian.ai"
     expected_md5: str = ""
+    invite_code: str = "4224242515552"
     daily_points: int = 90_000_000
 
     @property
