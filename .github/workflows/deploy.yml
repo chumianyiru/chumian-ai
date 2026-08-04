@@ -28,8 +28,16 @@ jobs:
           script: |
             set -e
             export DEBIAN_FRONTEND=noninteractive
-            apt-get update
-            apt-get install -y python3 python3-venv python3-pip systemd
+            if command -v apt-get >/dev/null 2>&1; then
+              apt-get update
+              apt-get install -y python3 python3-venv python3-pip systemd
+            elif command -v yum >/dev/null 2>&1; then
+              yum install -y python3 python3-pip systemd
+            elif command -v dnf >/dev/null 2>&1; then
+              dnf install -y python3 python3-pip systemd
+            else
+              echo "No supported package manager found"; exit 1
+            fi
 
             APP_DIR=/opt/chumian-ai
             mkdir -p $APP_DIR
@@ -38,7 +46,7 @@ jobs:
             cp -r ${{ github.workspace }}/backend/* $APP_DIR/
             cd $APP_DIR
 
-            python3 -m venv venv
+            python3 -m venv venv || python3 -m virtualenv venv
             source venv/bin/activate
             pip install --upgrade pip
             pip install -r requirements.txt
