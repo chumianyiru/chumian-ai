@@ -62,7 +62,14 @@ jobs:
 
             # 服务器直接下载轻量独立 Python 包
             PYTHON_DIR=/opt/python311
-            if "$PYTHON_DIR/bin/python3" --version >/dev/null 2>&1; then
+            PYTHON_OK=false
+            if [ -x "$PYTHON_DIR/bin/python3" ]; then
+              if "$PYTHON_DIR/bin/python3" --version >/dev/null 2>&1; then
+                PYTHON_OK=true
+              fi
+            fi
+
+            if [ "$PYTHON_OK" = "true" ]; then
               echo "[deploy] 检测到可用的 Python: $PYTHON_DIR/bin/python3"
             else
               echo "[deploy] 开始下载 Python 3.11 独立包"
