@@ -77,9 +77,10 @@ jobs:
                 echo "[deploy] 尝试下载: $1"
                 curl -fsSL --connect-timeout 60 --max-time 600 --retry 2 -o $CONDA_SH "$1" || return 1
               }
-              download_conda "https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda3-latest-Linux-x86_64.sh" || \
-              download_conda "https://mirrors.aliyun.com/anaconda/miniconda/Miniconda3-latest-Linux-x86_64.sh" || \
-              download_conda "https://mirrors.huaweicloud.com/anaconda/miniconda/Miniconda3-latest-Linux-x86_64.sh" || \
+              # 使用支持 CentOS 7 (GLIBC 2.17) 的 Miniconda 版本
+              download_conda "https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda3-py311_23.11.0-2-Linux-x86_64.sh" || \
+              download_conda "https://mirrors.aliyun.com/anaconda/miniconda/Miniconda3-py311_23.11.0-2-Linux-x86_64.sh" || \
+              download_conda "https://mirrors.huaweicloud.com/anaconda/miniconda/Miniconda3-py311_23.11.0-2-Linux-x86_64.sh" || \
               (echo "ERROR: 无法下载 Miniconda 安装包"; ls -lh $CONDA_SH 2>/dev/null || true; exit 1)
               echo "[deploy] Miniconda 下载完成，开始安装"
               bash $CONDA_SH -b -p $MINICONDA
