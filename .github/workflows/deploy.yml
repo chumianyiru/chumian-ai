@@ -29,8 +29,9 @@ jobs:
             touch /opt/rh/devtoolset-9/enable
 
       - name: Download standalone Python
+        working-directory: ${{ github.workspace }}
         run: |
-          wget -q -O /tmp/python311.tar.gz \
+          wget -q -O python311.tar.gz \
             https://github.com/indygreg/python-build-standalone/releases/download/20240814/cpython-3.11.9+20240814-x86_64-unknown-linux-gnu-install_only.tar.gz
 
       - name: Copy Python tarball to server
@@ -40,7 +41,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           port: ${{ secrets.SERVER_PORT }}
-          source: "/tmp/python311.tar.gz"
+          source: "python311.tar.gz"
           target: "/tmp/"
           overwrite: true
 
