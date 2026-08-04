@@ -48,7 +48,7 @@ jobs:
           password: ${{ secrets.SERVER_PASSWORD }}
           port: ${{ secrets.SERVER_PORT }}
           command_timeout: 30m
-          script_stop: true
+          script_stop: false
           script: |
             set -e
             set -x
