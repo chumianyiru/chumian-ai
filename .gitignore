@@ -31,6 +31,9 @@ frontend/chumian_ai/macos/Flutter/ephemeral/
 frontend/chumian_ai/windows/Flutter/ephemeral/
 frontend/chumian_ai/linux/Flutter/ephemeral/
 
+# Local build artifacts
+builds/
+
 # IDE
 .idea/
 .vscode/
