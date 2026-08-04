@@ -51,36 +51,46 @@ jobs:
           script_stop: true
           script: |
             set -e
+            set -x
             export DEBIAN_FRONTEND=noninteractive
 
             APP_DIR=/opt/chumian-ai
             rm -rf $APP_DIR
             mv /tmp/chumian-ai-staging/backend $APP_DIR
             cd $APP_DIR
+            echo "[deploy] 后端代码已部署到 $APP_DIR"
 
-            # 服务器直接下载轻量独立 Python 包（避免 scp 大文件到慢服务器）
+            # 服务器直接下载轻量独立 Python 包
             PYTHON_DIR=/opt/python311
-            if [ ! -x "$PYTHON_DIR/bin/python3" ]; then
+            if [ -x "$PYTHON_DIR/bin/python3" ]; then
+              echo "[deploy] 检测到已存在 $PYTHON_DIR，跳过 Python 下载"
+            else
+              echo "[deploy] 开始下载 Python 3.11 独立包"
               rm -rf $PYTHON_DIR
               mkdir -p $PYTHON_DIR
               PY_TAR=/tmp/python311.tar.gz
               rm -f $PY_TAR
               download_python() {
-                curl -fsSL --max-time 300 --retry 3 -o $PY_TAR "$1" || return 1
+                echo "[deploy] 尝试下载: $1"
+                curl -fsSL --connect-timeout 30 --max-time 180 --retry 2 -o $PY_TAR "$1" || return 1
               }
-              # 依次尝试多个源
               download_python "https://github.com/indygreg/python-build-standalone/releases/download/20240713/cpython-3.11.9+20240713-x86_64-unknown-linux-gnu-install_only.tar.gz" || \
               download_python "https://ghproxy.com/https://github.com/indygreg/python-build-standalone/releases/download/20240713/cpython-3.11.9+20240713-x86_64-unknown-linux-gnu-install_only.tar.gz" || \
-              download_python "https://mirror.ghproxy.com/https://github.com/indygreg/python-build-standalone/releases/download/20240713/cpython-3.11.9+20240713-x86_64-unknown-linux-gnu-install_only.tar.gz" || \
               (echo "ERROR: 无法下载 Python 3.11 独立包"; ls -lh $PY_TAR 2>/dev/null || true; exit 1)
+              echo "[deploy] Python 包下载完成，开始解压"
               tar -xzf $PY_TAR -C $PYTHON_DIR --strip-components=1
               rm -f $PY_TAR
+              echo "[deploy] Python 解压完成: $PYTHON_DIR/bin/python3"
             fi
 
+            echo "[deploy] 创建虚拟环境"
             $PYTHON_DIR/bin/python3 -m venv venv
             source venv/bin/activate
-            pip install --upgrade pip -i https://pypi.tuna.tsinghua.edu.cn/simple
-            pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+            echo "[deploy] 升级 pip"
+            timeout 300 pip install --upgrade pip -i https://pypi.tuna.tsinghua.edu.cn/simple --timeout 60
+            echo "[deploy] 安装依赖"
+            timeout 600 pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple --timeout 60
+            echo "[deploy] 依赖安装完成"
 
             cat > .env <<ENV_EOF
             GLM_API_KEY=${{ secrets.GLM_API_KEY }}
