@@ -1,0 +1,83 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy backend via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: ${{ secrets.SERVER_PORT }}
+          script_stop: true
+          script: |
+            set -e
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update
+            apt-get install -y python3 python3-venv python3-pip systemd
+
+            APP_DIR=/opt/chumian-ai
+            mkdir -p $APP_DIR
+            rm -rf $APP_DIR/app $APP_DIR/main.py $APP_DIR/requirements.txt $APP_DIR/data
+
+            cp -r ${{ github.workspace }}/backend/* $APP_DIR/
+            cd $APP_DIR
+
+            python3 -m venv venv
+            source venv/bin/activate
+            pip install --upgrade pip
+            pip install -r requirements.txt
+
+            cat > .env <<ENV_EOF
+            GLM_API_KEY=${{ secrets.GLM_API_KEY }}
+            GLM_BASE_URL=https://open.bigmodel.cn/api/paas/v4
+            SMTP_HOST=smtp.qq.com
+            SMTP_PORT=465
+            SMTP_USER=3930535663@qq.com
+            SMTP_PASS=${{ secrets.SMTP_PASS }}
+            EXPECTED_PACKAGE=com.chumian.ai
+            EXPECTED_MD5=${{ secrets.EXPECTED_MD5 }}
+            DAILY_POINTS=90000000
+            MAX_CONCURRENT_CHATS=5
+            HOST=0.0.0.0
+            PORT=24512
+            ENV_EOF
+
+            cat > /etc/systemd/system/chumian-ai.service <<SERVICE_EOF
+            [Unit]
+            Description=初眠AI 后端服务
+            After=network.target
+
+            [Service]
+            Type=simple
+            User=root
+            WorkingDirectory=$APP_DIR
+            Environment=PATH=$APP_DIR/venv/bin
+            ExecStart=$APP_DIR/venv/bin/uvicorn main:app --host 0.0.0.0 --port 24512
+            Restart=always
+            RestartSec=5
+
+            [Install]
+            WantedBy=multi-user.target
+            SERVICE_EOF
+
+            systemctl daemon-reload
+            systemctl enable chumian-ai
+            systemctl restart chumian-ai
+            sleep 3
+            systemctl status chumian-ai --no-pager
