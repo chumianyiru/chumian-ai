@@ -28,23 +28,6 @@ jobs:
             mkdir -p /opt/rh/devtoolset-9
             touch /opt/rh/devtoolset-9/enable
 
-      - name: Download standalone Python
-        working-directory: ${{ github.workspace }}
-        run: |
-          wget -q -O python311.tar.gz \
-            https://github.com/indygreg/python-build-standalone/releases/download/20240814/cpython-3.11.9+20240814-x86_64-unknown-linux-gnu-install_only.tar.gz
-
-      - name: Copy Python tarball to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          password: ${{ secrets.SERVER_PASSWORD }}
-          port: ${{ secrets.SERVER_PORT }}
-          source: "python311.tar.gz"
-          target: "/tmp/"
-          overwrite: true
-
       - name: Copy backend to server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -63,7 +46,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           port: ${{ secrets.SERVER_PORT }}
-          command_timeout: 20m
+          command_timeout: 30m
           script_stop: true
           script: |
             set -e
@@ -74,22 +57,23 @@ jobs:
             mv /tmp/chumian-ai-staging/backend $APP_DIR
             cd $APP_DIR
 
-            # 使用预编译独立 Python 3.11（避免 CentOS 7 系统 Python 版本过低）
-            PY_ROOT=/opt/python311
-            if [ ! -x "$PY_ROOT/bin/python3" ]; then
+            # 在服务器上通过国内镜像安装 Miniconda（避免系统 Python 版本过低）
+            MINICONDA=/opt/miniconda3
+            if [ ! -x "$MINICONDA/bin/python3" ]; then
               if command -v yum >/dev/null 2>&1; then
-                yum install -y tar gzip
+                yum install -y wget bzip2
               elif command -v apt-get >/dev/null 2>&1; then
-                apt-get update && apt-get install -y tar gzip
+                apt-get update && apt-get install -y wget bzip2
               fi
-              mkdir -p $PY_ROOT
-              tar -xzf /tmp/python311.tar.gz -C $PY_ROOT --strip-components=1
+              wget -q -O /tmp/miniconda.sh https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda3-latest-Linux-x86_64.sh
+              bash /tmp/miniconda.sh -b -p $MINICONDA
+              rm -f /tmp/miniconda.sh
             fi
 
-            $PY_ROOT/bin/python3 -m venv venv
+            $MINICONDA/bin/python3 -m venv venv
             source venv/bin/activate
-            pip install --upgrade pip
-            pip install -r requirements.txt
+            pip install --upgrade pip -i https://pypi.tuna.tsinghua.edu.cn/simple
+            pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
             cat > .env <<ENV_EOF
             GLM_API_KEY=${{ secrets.GLM_API_KEY }}
