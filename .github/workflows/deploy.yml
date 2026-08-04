@@ -28,14 +28,20 @@ jobs:
             mkdir -p /opt/rh/devtoolset-9
             touch /opt/rh/devtoolset-9/enable
 
-      - name: Copy backend to server
+      - name: Download Miniconda installer on runner
+        run: |
+          mkdir -p /tmp/chumian-ai-staging
+          curl -fsSL -o /tmp/chumian-ai-staging/miniconda.sh https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda3-latest-Linux-x86_64.sh
+
+      - name: Copy backend and Miniconda installer to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           port: ${{ secrets.SERVER_PORT }}
-          source: "backend/"
+          timeout: 30m
+          source: "backend/,/tmp/chumian-ai-staging/miniconda.sh"
           target: "/tmp/chumian-ai-staging"
           rm: true
 
@@ -57,17 +63,10 @@ jobs:
             mv /tmp/chumian-ai-staging/backend $APP_DIR
             cd $APP_DIR
 
-            # 在服务器上通过国内镜像安装 Miniconda（避免系统 Python 版本过低）
+            # 使用 GitHub Actions runner 已传过来的 Miniconda 安装包（避免服务器下载失败）
             MINICONDA=/opt/miniconda3
             if [ ! -x "$MINICONDA/bin/python3" ]; then
-              if command -v yum >/dev/null 2>&1; then
-                yum install -y wget bzip2
-              elif command -v apt-get >/dev/null 2>&1; then
-                apt-get update && apt-get install -y wget bzip2
-              fi
-              wget -q -O /tmp/miniconda.sh https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda3-latest-Linux-x86_64.sh
-              bash /tmp/miniconda.sh -b -p $MINICONDA
-              rm -f /tmp/miniconda.sh
+              bash /tmp/chumian-ai-staging/miniconda.sh -b -p $MINICONDA
             fi
 
             $MINICONDA/bin/python3 -m venv venv
