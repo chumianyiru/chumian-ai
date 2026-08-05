@@ -132,8 +132,10 @@ jobs:
             SERVICE_EOF
 
             # 清理可能占用 24512 端口的旧进程
-            echo "[deploy] 停止旧服务"
+            echo "[deploy] 停止旧服务并禁用自动重启"
+            systemctl disable chumian-ai 2>/dev/null || true
             systemctl stop chumian-ai 2>/dev/null || true
+            sleep 3
             echo "[deploy] 清理占用 24512 端口的旧进程"
             fuser -k 24512/tcp 2>/dev/null || true
             for pid in $(ss -ltnp 2>/dev/null | grep ':24512' | grep -oP 'pid=\K[0-9]+'); do
@@ -147,7 +149,7 @@ jobs:
 
             systemctl daemon-reload
             systemctl enable chumian-ai
-            systemctl restart chumian-ai || true
+            systemctl start chumian-ai || true
             sleep 5
             if systemctl is-active --quiet chumian-ai; then
               echo "[deploy] 服务启动成功"
