@@ -132,27 +132,55 @@ jobs:
             SERVICE_EOF
 
             # 清理可能占用 24512 端口的旧进程
+            echo "[deploy] 写入临时 service 配置以禁用自动重启"
+            cat > /etc/systemd/system/chumian-ai.service <<SERVICE_EOF
+            [Unit]
+            Description=初眠AI 后端服务
+            After=network.target
+
+            [Service]
+            Type=simple
+            User=root
+            WorkingDirectory=$APP_DIR
+            Environment=PATH=$APP_DIR/venv/bin:/opt/miniconda3/bin
+            ExecStart=$APP_DIR/venv/bin/python3 -m uvicorn main:app --host 0.0.0.0 --port 24512
+            Restart=no
+
+            [Install]
+            WantedBy=multi-user.target
+            SERVICE_EOF
+            systemctl daemon-reload
+
             echo "[deploy] 停止旧服务"
             systemctl stop chumian-ai 2>/dev/null || true
-            sleep 2
-            echo "[deploy] 强制结束 uvicorn 进程"
-            ps aux | grep '[u]vicorn main:app' | awk '{print $2}' | xargs -r kill -9 2>/dev/null || true
+            sleep 5
+
+            echo "[deploy] 清理占用 24512 端口的旧进程"
             fuser -k 24512/tcp 2>/dev/null || true
-            for pid in $(ss -ltnp 2>/dev/null | grep ':24512' | grep -oP 'pid=\K[0-9]+'); do
-              echo "[deploy] 强制结束 PID $pid"
-              kill -9 "$pid" 2>/dev/null || true
-            done
             sleep 3
-            echo "[deploy] 确认端口是否释放"
-            if ss -ltnp 2>/dev/null | grep -q ':24512'; then
-              echo "[deploy] 端口仍被占用，尝试结束所有相关 Python 进程"
-              ps aux | grep -E '/opt/chumian-ai|uvicorn' | grep -v grep | awk '{print $2}' | xargs -r kill -9 2>/dev/null || true
-              sleep 2
-            fi
+
             echo "[deploy] 清理 Python 缓存"
             find $APP_DIR -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
             find $APP_DIR -name '*.pyc' -delete 2>/dev/null || true
 
+            echo "[deploy] 写入正式 service 配置并启动"
+            cat > /etc/systemd/system/chumian-ai.service <<SERVICE_EOF
+            [Unit]
+            Description=初眠AI 后端服务
+            After=network.target
+
+            [Service]
+            Type=simple
+            User=root
+            WorkingDirectory=$APP_DIR
+            Environment=PATH=$APP_DIR/venv/bin:/opt/miniconda3/bin
+            ExecStart=$APP_DIR/venv/bin/python3 -m uvicorn main:app --host 0.0.0.0 --port 24512
+            Restart=always
+            RestartSec=5
+
+            [Install]
+            WantedBy=multi-user.target
+            SERVICE_EOF
             systemctl daemon-reload
             systemctl enable chumian-ai
             systemctl start chumian-ai || true
