@@ -132,6 +132,10 @@ jobs:
             SERVICE_EOF
 
             # 清理可能占用 24512 端口的旧进程
+            echo "[deploy] 停止旧服务"
+            systemctl stop chumian-ai 2>/dev/null || true
+            sleep 5
+
             echo "[deploy] 写入临时 service 配置以禁用自动重启"
             cat > /etc/systemd/system/chumian-ai.service <<SERVICE_EOF
             [Unit]
@@ -151,13 +155,20 @@ jobs:
             SERVICE_EOF
             systemctl daemon-reload
 
-            echo "[deploy] 停止旧服务"
-            systemctl stop chumian-ai 2>/dev/null || true
-            sleep 5
-
             echo "[deploy] 清理占用 24512 端口的旧进程"
             fuser -k 24512/tcp 2>/dev/null || true
-            sleep 3
+            for pid in $(ss -ltnp 2>/dev/null | grep ':24512' | grep -oP 'pid=\K[0-9]+' | sort -u); do
+              echo "[deploy] 强制结束 PID $pid"
+              kill -9 "$pid" 2>/dev/null || true
+            done
+            for i in $(seq 1 15); do
+              if ! ss -ltn 2>/dev/null | grep -q ':24512'; then
+                echo "[deploy] 端口已释放"
+                break
+              fi
+              echo "[deploy] 等待端口释放 ($i/15)"
+              sleep 2
+            done
 
             echo "[deploy] 清理 Python 缓存"
             find $APP_DIR -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
