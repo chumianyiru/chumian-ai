@@ -3,7 +3,6 @@ import smtplib
 import ssl
 import socket
 from email.mime.text import MIMEText
-from email.header import Header
 import asyncio
 import logging
 from app.config import settings
@@ -56,9 +55,9 @@ def _build_message(to_email: str, code: str) -> MIMEText:
 </body></html>
 """
     msg = MIMEText(body, "html", "utf-8")
-    msg["From"] = Header(f"初眠AI <{settings.smtp_user}>", "utf-8")
-    msg["To"] = Header(to_email, "utf-8")
-    msg["Subject"] = Header(subject, "utf-8")
+    msg["From"] = f"初眠AI <{settings.smtp_user}>"
+    msg["To"] = to_email
+    msg["Subject"] = subject
     return msg
 
 
