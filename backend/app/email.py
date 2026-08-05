@@ -55,7 +55,7 @@ def _build_message(to_email: str, code: str) -> MIMEText:
 </body></html>
 """
     msg = MIMEText(body, "html", "utf-8")
-    msg["From"] = f"初眠AI <{settings.smtp_user}>"
+    msg["From"] = settings.smtp_user
     msg["To"] = to_email
     msg["Subject"] = subject
     return msg
