@@ -27,8 +27,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _sendCode() async {
     final email = _emailCtrl.text.trim();
-    if (!email.endsWith('@qq.com')) {
-      Fluttertoast.showToast(msg: '仅支持 QQ 邮箱');
+    if (email.isEmpty || !email.contains('@')) {
+      Fluttertoast.showToast(msg: '请输入有效邮箱');
       return;
     }
     setState(() => _sendingCode = true);
@@ -62,8 +62,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final password = _passwordCtrl.text;
     final nickname = _nicknameCtrl.text.trim();
 
-    if (!email.endsWith('@qq.com')) {
-      Fluttertoast.showToast(msg: '仅支持 QQ 邮箱');
+    if (email.isEmpty || !email.contains('@')) {
+      Fluttertoast.showToast(msg: '请输入有效邮箱');
       return;
     }
     if (code.length != 6) {
@@ -126,7 +126,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 controller: _emailCtrl,
                 keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(
-                  hintText: 'QQ 邮箱',
+                  hintText: '邮箱',
                   prefixIcon: Icon(Icons.email_outlined),
                 ),
               ),

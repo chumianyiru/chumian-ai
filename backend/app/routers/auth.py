@@ -42,8 +42,6 @@ async def client_verify(payload: ClientVerify):
 @router.post("/send-code")
 async def send_code(payload: SendCode, db: aiosqlite.Connection = Depends(get_db)):
     email = payload.email.lower()
-    if not email.endswith("@qq.com"):
-        raise HTTPException(status_code=400, detail="目前仅支持QQ邮箱")
     row = await db.execute("SELECT * FROM users WHERE email=?", (email,))
     user = await row.fetchone()
     if user and user["email_verified"]:
@@ -72,8 +70,6 @@ async def register(payload: Register, db: aiosqlite.Connection = Depends(get_db)
     if payload.invite_code != settings.invite_code:
         raise HTTPException(status_code=400, detail="邀请码错误")
     email = payload.email.lower()
-    if not email.endswith("@qq.com"):
-        raise HTTPException(status_code=400, detail="目前仅支持QQ邮箱")
     row = await db.execute("SELECT * FROM users WHERE email=?", (email,))
     user = await row.fetchone()
     if not user or user["email_verified"]:

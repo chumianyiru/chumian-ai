@@ -26,8 +26,8 @@ class _LoginScreenState extends State<LoginScreen> {
     final email = _emailCtrl.text.trim();
     final password = _passwordCtrl.text;
 
-    if (!email.endsWith('@qq.com')) {
-      Fluttertoast.showToast(msg: '仅支持 QQ 邮箱');
+    if (email.isEmpty || !email.contains('@')) {
+      Fluttertoast.showToast(msg: '请输入有效邮箱');
       return;
     }
     if (password.length < 6) {
@@ -111,7 +111,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 8),
               const Text(
-                '登录你的 QQ 邮箱账号继续',
+                '登录你的邮箱账号继续',
                 style: TextStyle(
                   color: AppColors.onSurfaceVariant,
                 ),
@@ -121,7 +121,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 controller: _emailCtrl,
                 keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(
-                  hintText: 'QQ 邮箱',
+                  hintText: '邮箱',
                   prefixIcon: Icon(Icons.email_outlined),
                 ),
               ),
