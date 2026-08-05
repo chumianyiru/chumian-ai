@@ -129,11 +129,29 @@ class ApiClient {
   }
 
   dynamic _handle(http.Response response) {
-    final body = response.body.isNotEmpty ? jsonDecode(response.body) : null;
+    final contentType = response.headers['content-type'] ?? '';
+    final isJson = contentType.contains('application/json');
+    dynamic body;
+    if (response.body.isNotEmpty && isJson) {
+      try {
+        body = jsonDecode(response.body);
+      } catch (_) {
+        body = null;
+      }
+    }
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return body;
     }
-    final message = body is Map ? body['detail'] ?? body['message'] ?? '请求失败' : '请求失败';
+    String message;
+    if (body is Map) {
+      message = body['detail'] ?? body['message'] ?? '请求失败';
+    } else if (response.body.isNotEmpty) {
+      message = response.body.length > 200
+          ? '${response.body.substring(0, 200)}...'
+          : response.body;
+    } else {
+      message = '请求失败 (HTTP ${response.statusCode})';
+    }
     throw ApiException(message, statusCode: response.statusCode);
   }
 
