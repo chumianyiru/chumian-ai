@@ -37,39 +37,6 @@ jobs:
           name: chumian-ai-android-apk
           path: build/app/outputs/flutter-apk/app-release.apk
 
-  build-windows:
-    name: Build Windows x64
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.24.5'
-          channel: 'stable'
-          cache: true
-
-      - run: flutter config --enable-windows-desktop
-
-      - run: flutter pub get
-
-      - name: Generate launcher icons
-        run: dart run flutter_launcher_icons
-
-      - name: Build Windows
-        run: flutter build windows --release
-
-      - name: Package as ZIP
-        run: |
-          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath chumian-ai-windows-x64.zip
-        shell: powershell
-
-      - name: Upload Windows ZIP
-        uses: actions/upload-artifact@v4
-        with:
-          name: chumian-ai-windows-x64
-          path: chumian-ai-windows-x64.zip
-
   build-ios:
     name: Build iOS (no signing)
     runs-on: macos-latest
