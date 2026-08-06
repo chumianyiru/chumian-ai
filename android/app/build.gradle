@@ -48,9 +48,8 @@ android {
 
     buildTypes {
         release {
-            if (file('keystore.jks').exists()) {
-                signingConfig = signingConfigs.release
-            }
+            // Use release keystore if available, otherwise fall back to debug signing
+            signingConfig = file('keystore.jks').exists() ? signingConfigs.release : signingConfigs.debug
             minifyEnabled = false
             shrinkResources = false
         }
