@@ -28,6 +28,10 @@ jobs:
       - name: Generate launcher icons
         run: dart run flutter_launcher_icons
 
+      - name: Generate signing keystore
+        run: |
+          keytool -genkey -v -keystore android/app/keystore.jks -storepass chumian123 -alias chumian -keypass chumian123 -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=ChumianAI, OU=Dev, O=Chumian, L=Beijing, ST=Beijing, C=CN"
+
       - name: Build APK
         run: flutter build apk --release --target-platform android-arm64
 
