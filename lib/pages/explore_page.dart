@@ -276,6 +276,11 @@ class _CommentsSheetState extends State<_CommentsSheet> {
   final _controller = TextEditingController();
   bool _loading = true;
 
+  String _safeInitial(String? name) {
+    if (name == null || name.isEmpty) return '?';
+    return name[0];
+  }
+
   @override
   void initState() {
     super.initState();
